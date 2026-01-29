@@ -1,7 +1,5 @@
-node_modules
 **/node_modules
 **/dist
+**/.git
 **/.DS_Store
-client/dist
-server/dist
 .env

@@ -1,23 +1,31 @@
-import path from "path";
-import os from "os";
 import express from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
-import { ApolloServer } from "apollo-server-express";
+import os from "os";
+import path from "path";
+import http from "http";
+
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@apollo/server/express4";
+import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 
 const app = express();
+const httpServer = http.createServer(app);
+
 app.use(cors());
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
 
-app.post("/api/login", (_req, res) => {
-  const token = jwt.sign({ userId: 1 }, JWT_SECRET, { expiresIn: "1h" });
-  res.json({ token });
-});
+/* -------------------- REST ENDPOINTS -------------------- */
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
+});
+
+app.post("/api/login", (_req, res) => {
+  const token = jwt.sign({ userId: 1 }, JWT_SECRET, { expiresIn: "1h" });
+  res.json({ token });
 });
 
 app.get("/api/metrics", (_req, res) => {
@@ -45,7 +53,9 @@ app.get("/api/metrics", (_req, res) => {
   });
 });
 
-const typeDefs = `
+/* -------------------- GRAPHQL -------------------- */
+
+const typeDefs = `#graphql
   type Query {
     hello: String
   }
@@ -57,19 +67,27 @@ const resolvers = {
   }
 };
 
-const gqlServer = new ApolloServer({ typeDefs, resolvers });
-await gqlServer.start();
-gqlServer.applyMiddleware({ app });
+const gqlServer = new ApolloServer({
+  typeDefs,
+  resolvers,
+  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })]
+});
 
-// Serve React static files
+await gqlServer.start();
+app.use("/graphql", expressMiddleware(gqlServer));
+
+/* -------------------- SERVE REACT (PRODUCTION) -------------------- */
+
 const publicPath = path.join(process.cwd(), "public");
 app.use(express.static(publicPath));
 
-// Fallback to index.html for React router
-app.get("*", (_req, res) => {
+app.get("/", (_req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+/* -------------------- START SERVER -------------------- */
+
+const PORT = Number(process.env.PORT || 3000);
+httpServer.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });

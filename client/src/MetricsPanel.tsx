@@ -1,27 +1,45 @@
 import { useEffect, useState } from "react";
-import { Metrics } from "./types";
+import type { Metrics } from "./types";
+
+function fmtTime(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleString();
+}
 
 export default function MetricsPanel() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let alive = true;
+
     const fetchMetrics = async () => {
-      const res = await fetch("/api/metrics");
-      const data = await res.json();
-      setMetrics(data);
+      try {
+        setError(null);
+        const res = await fetch("/api/metrics", { headers: { "Accept": "application/json" } });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} ${res.statusText}`);
+        }
+        const data = (await res.json()) as Metrics;
+        if (alive) setMetrics(data);
+      } catch (e: any) {
+        if (alive) setError(e?.message ?? String(e));
+      }
     };
 
     fetchMetrics();
-    const id = setInterval(fetchMetrics, 5000);
-    return () => clearInterval(id);
+    const id = window.setInterval(fetchMetrics, 5000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
   }, []);
 
-  if (!metrics) {
-    return <p>Loading metrics…</p>;
-  }
+  if (error) return <p style={{ color: "crimson" }}>Metrics error: {error}</p>;
+  if (!metrics) return <p>Loading metrics…</p>;
 
   return (
-    <div style={{ display: "grid", gap: "1rem", maxWidth: 800 }}>
+    <div style={{ display: "grid", gap: "1rem", maxWidth: 900 }}>
       <section>
         <h2>Server</h2>
         <ul>
@@ -29,6 +47,7 @@ export default function MetricsPanel() {
           <li>Node: {metrics.server.nodeVersion}</li>
           <li>PID: {metrics.server.pid}</li>
           <li>Env: {metrics.server.env}</li>
+          <li>Timestamp: {fmtTime(metrics.server.timestamp)}</li>
         </ul>
       </section>
 
@@ -53,4 +72,3 @@ export default function MetricsPanel() {
     </div>
   );
 }
-
