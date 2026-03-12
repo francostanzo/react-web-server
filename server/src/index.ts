@@ -142,6 +142,17 @@ app.post("/api/stocks/tickers", (req, res) => {
   res.json({ symbol: upper, tickers });
 });
 
+app.delete("/api/stocks/tickers/:symbol", (req, res) => {
+  const symbol = req.params.symbol.toUpperCase();
+  const idx = tickers.indexOf(symbol);
+  if (idx === -1) {
+    res.status(404).json({ error: `${symbol} not found` });
+    return;
+  }
+  tickers.splice(idx, 1);
+  res.json({ symbol, tickers });
+});
+
 app.get("/api/crypto", async (_req, res) => {
   try {
     const parseNum = (s: string | undefined) =>
@@ -200,6 +211,17 @@ app.post("/api/crypto/tickers", (req, res) => {
   }
   cryptoTickers.push(upper);
   res.json({ symbol: upper, tickers: cryptoTickers });
+});
+
+app.delete("/api/crypto/tickers/:symbol", (req, res) => {
+  const symbol = req.params.symbol.toUpperCase();
+  const idx = cryptoTickers.indexOf(symbol);
+  if (idx === -1) {
+    res.status(404).json({ error: `${symbol} not found` });
+    return;
+  }
+  cryptoTickers.splice(idx, 1);
+  res.json({ symbol, tickers: cryptoTickers });
 });
 
 /* -------------------- GRAPHQL -------------------- */
