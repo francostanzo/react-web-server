@@ -16,5 +16,6 @@ export interface Metrics {
     arch: string;
     cpuCores: number;
     loadAvg: number[];
+    lanIp: string;
   };
 }

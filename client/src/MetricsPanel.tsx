@@ -67,6 +67,7 @@ export default function MetricsPanel() {
           <li>Arch: {metrics.system.arch}</li>
           <li>CPU Cores: {metrics.system.cpuCores}</li>
           <li>Load Avg: {metrics.system.loadAvg.join(", ")}</li>
+          <li>LAN IP: {metrics.system.lanIp}</li>
         </ul>
       </section>
     </div>

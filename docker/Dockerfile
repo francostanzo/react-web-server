@@ -22,6 +22,10 @@ RUN cd server && npm run build
 # Copy React build into server/public
 COPY --from=client-builder /app/client/dist /app/server/public
 
+# Copy ticker data files (read at runtime from /app/)
+COPY tickers.txt ./
+COPY crypto_tickers.txt ./
+
 WORKDIR /app/server
 ENV NODE_ENV=production
 EXPOSE 3000
